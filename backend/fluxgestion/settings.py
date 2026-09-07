@@ -97,8 +97,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'fr-fr'
-TIME_ZONE = 'Europe/Paris'
+LANGUAGE_CODE = config('LANGUAGE_CODE', default='fr-fr')
+
+# Le fuseau gouverne le pointage et la journée : une arrivée à 8 h se juge à
+# l'heure du bureau, pas à celle du serveur. Zone BEAC : Africa/Douala.
+TIME_ZONE = config('TIME_ZONE', default='Europe/Paris')
 USE_I18N = True
 USE_TZ = True
 
