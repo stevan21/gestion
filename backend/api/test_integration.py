@@ -11,12 +11,16 @@ import json
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
+from rest_framework.throttling import SimpleRateThrottle
 
 from api.managers import month_range, month_start
 from api.models import (
@@ -2386,3 +2390,50 @@ class AttendanceTest(TeamTestCase):
 
         self.assertIsNotNone(reponse.data['attendance'])
         self.assertEqual(reponse.data['leave_balance'], 18.0)
+
+
+class LoginThrottleTest(APITestCase):
+    """Limite de connexion : un mot de passe ne se devine pas en rafale."""
+
+    def setUp(self):
+        User.objects.create_user('karim', password='pass-Solide1')
+        # Le compteur vit dans le cache : un essai laissé par un autre test
+        # fausserait celui-ci.
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def limite(self, taux='3/min'):
+        """Rétablit la limite, neutralisée pour le reste de la suite.
+
+        Le taux se pose sur la classe : DRF le lie à `THROTTLE_RATES` au moment
+        de l'import, hors de portée d'`override_settings`.
+        """
+        return patch.object(SimpleRateThrottle, 'THROTTLE_RATES',
+                            {'login': taux, 'register': None})
+
+    def essai(self, motdepasse):
+        return self.client.post('/api/auth/login/', {
+            'username': 'karim', 'password': motdepasse,
+        }, format='json')
+
+    def test_repeated_failures_close_the_door(self):
+        """Passé le quota, même le bon mot de passe est refusé."""
+        with self.limite():
+            for _ in range(3):
+                self.assertEqual(self.essai('faux').status_code, 400)
+
+            # Le quota est atteint : la vue ne vérifie plus rien, elle compte.
+            self.assertEqual(self.essai('pass-Solide1').status_code, 429)
+
+    def test_a_normal_login_passes(self):
+        with self.limite():
+            reponse = self.essai('pass-Solide1')
+            self.assertEqual(reponse.status_code, 200)
+            self.assertIn('token', reponse.data)
+
+    def test_the_suite_runs_without_a_limit(self):
+        """Hors test dédié, la limite est neutralisée : voir le test runner."""
+        for _ in range(12):
+            self.assertEqual(self.essai('faux').status_code, 400)

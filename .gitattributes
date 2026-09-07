@@ -1,0 +1,17 @@
+# Fin de ligne : LF dans le dépôt et à la sortie, quelle que soit la machine.
+#
+# Un script shell ou une unité systemd livrés en CRLF échouent sur le serveur —
+# le noyau lit « /bin/bash\r » et ne trouve pas l'interpréteur. Sans cette
+# règle, un poste Windows produit ces fichiers sans que rien ne le signale.
+* text=auto eol=lf
+
+# Fichiers binaires : jamais de conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.sqlite3 binary

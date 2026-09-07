@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.test.runner import DiscoverRunner
+from rest_framework.throttling import SimpleRateThrottle
 
 
 class FastPasswordRunner(DiscoverRunner):
@@ -24,3 +25,12 @@ class FastPasswordRunner(DiscoverRunner):
         settings.PASSWORD_HASHERS = [
             'django.contrib.auth.hashers.MD5PasswordHasher',
         ]
+        # Le compteur de la limite de connexion vit dans le cache, partagé par
+        # toute la suite : une dizaine de connexions légitimes finiraient par
+        # la déclencher et feraient échouer des tests sans rapport. Les tests
+        # qui vérifient la limite la rétablissent eux-mêmes.
+        #
+        # Le taux se pose sur la classe et non dans les réglages : DRF le lie à
+        # `SimpleRateThrottle.THROTTLE_RATES` au moment de l'import, où
+        # `override_settings` ne l'atteint plus.
+        SimpleRateThrottle.THROTTLE_RATES = {'login': None, 'register': None}

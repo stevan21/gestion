@@ -51,8 +51,11 @@ services:
       CELERY_TASK_ALWAYS_EAGER: "False"
       # Le proxy nginx termine TLS : sans lui, la redirection HTTPS boucle.
       SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-False}
-    ports:
-      - "8000:8000"
+    # Pas de port publié : nginx atteint l'API par le réseau interne. La
+    # publier ouvrirait une seconde porte d'entrée, sans TLS ni journal du
+    # proxy.
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
@@ -90,8 +93,9 @@ services:
   frontend:
     image: nginx:alpine
     container_name: fluxgestion_frontend
-    ports:
-      - "8001:80"
+    # Servie au travers du proxy, comme l'API.
+    expose:
+      - "80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro

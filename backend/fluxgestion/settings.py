@@ -134,6 +134,19 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    # Seules les vues qui déclarent un `throttle_scope` sont limitées : une
+    # limite globale gênerait l'usage normal — le panel se relit toutes les
+    # trente secondes et les listes se paginent en plusieurs appels.
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        # La connexion est la porte d'entrée : sans limite, un mot de passe
+        # se devine par force brute. Le compte se mesure par adresse IP.
+        'login': config('THROTTLE_LOGIN', default='10/min'),
+        # Créer des comptes en rafale n'a aucun usage légitime.
+        'register': config('THROTTLE_REGISTER', default='5/hour'),
+    },
 }
 
 # CORS Configuration

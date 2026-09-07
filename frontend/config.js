@@ -38,5 +38,13 @@ if (!adresseRetenue) {
     }
 }
 
-window.FLUXGESTION_API_URL = adresseRetenue
-    || `${window.location.protocol}//${window.location.hostname}:${API_PORT}/api`;
+// Servie par un proxy sur le port par defaut (80 ou 443), l'application et
+// son API partagent la meme origine : l'API repond alors sous `/api`, et
+// viser un port explicite echouerait — il n'est pas ouvert publiquement.
+// En developpement, la page vit sur un autre port (8001) et le backend sur
+// API_PORT : c'est le seul cas ou l'adresse porte un port.
+const memeOrigine = window.location.port === '';
+
+window.FLUXGESTION_API_URL = adresseRetenue || (memeOrigine
+    ? `${window.location.origin}/api`
+    : `${window.location.protocol}//${window.location.hostname}:${API_PORT}/api`);

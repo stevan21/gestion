@@ -1,0 +1,19 @@
+[Unit]
+Description=Flux Gestion - Celery Beat (tâches périodiques)
+After=network.target redis-server.service fluxgestion-worker.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/fluxgestion/backend
+EnvironmentFile=/etc/fluxgestion.env
+# Le planificateur écrit son état : il lui faut un répertoire à lui, que
+# systemd crée et nettoie.
+RuntimeDirectory=fluxgestion-beat
+ExecStart=/opt/fluxgestion/.venv/bin/celery -A fluxgestion beat -l info \
+          --schedule /run/fluxgestion-beat/celerybeat-schedule
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

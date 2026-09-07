@@ -1,0 +1,23 @@
+[Unit]
+Description=Flux Gestion - Gunicorn (Django)
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User=www-data
+Group=www-data
+# manage.py et le module de réglages vivent dans backend/.
+WorkingDirectory=/opt/fluxgestion/backend
+EnvironmentFile=/etc/fluxgestion.env
+RuntimeDirectory=fluxgestion
+# La socket est lue par nginx, qui tourne aussi sous www-data : l'umask lui
+# laisse le droit de groupe, sans ouvrir la socket à tout le système.
+ExecStart=/opt/fluxgestion/.venv/bin/gunicorn \
+          --workers 3 \
+          --umask 007 \
+          --bind unix:/run/fluxgestion/gunicorn.sock \
+          fluxgestion.wsgi:application
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

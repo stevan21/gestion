@@ -1,5 +1,8 @@
 #!/bin/bash
-# Script de déploiement avec Docker Compose
+# Déploiement par Docker Compose, sur une machine dédiée.
+#
+# Le proxy de la pile réclame les ports 80 et 443 : pour installer Flux Gestion
+# à côté d'applications déjà servies par un nginx du système, voir deploy/.
 
 set -e
 
@@ -14,8 +17,22 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "✗ Docker Compose n'est pas installé"
+if ! docker compose version &> /dev/null; then
+    echo "✗ Docker Compose (plugin v2) n'est pas installé"
+    exit 1
+fi
+
+# Une machine qui sert déjà un site verrait celui-ci coupé net.
+if ss -tln 2>/dev/null | grep -qE ':(80|443) '; then
+    echo "✗ Les ports 80 ou 443 sont déjà occupés sur cette machine."
+    echo "  Pour déployer à côté d'applications existantes : deploy/README.md"
+    exit 1
+fi
+
+# La clé n'a pas de valeur par défaut : une clé connue de tous ne signe rien.
+if [ -z "${SECRET_KEY:-}" ]; then
+    echo "✗ Définissez SECRET_KEY avant de déployer :"
+    echo "  export SECRET_KEY=\"\$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')\""
     exit 1
 fi
 
@@ -27,32 +44,32 @@ fi
 
 # Arrêter les conteneurs en cours
 echo "✓ Arrêt des conteneurs existants..."
-docker-compose down || true
+docker compose down || true
 
 # Construire les images
 echo "✓ Construction des images Docker..."
-docker-compose build
+docker compose build
 
 # Démarrer les services
 echo "✓ Démarrage des services..."
-docker-compose up -d
+docker compose up -d
 
-# Attendre que la base de données soit prête
+# La base annonce elle-même qu'elle est prête (healthcheck du compose).
 echo "✓ Attente de la base de données..."
-sleep 5
+docker compose exec -T db sh -c 'until pg_isready -q; do sleep 1; done'
 
 # Appliquer les migrations
 echo "✓ Application des migrations..."
-docker-compose exec -T backend python manage.py migrate
+docker compose exec -T backend python manage.py migrate --noinput
 
-# Charger les données de test
-echo "✓ Chargement des données de test..."
-docker-compose exec -T backend python manage.py loaddata fixtures/categories.json || true
+# Fichiers statiques de l'administration Django
+echo "✓ Collecte des fichiers statiques..."
+docker compose exec -T backend python manage.py collectstatic --noinput
 
-# Créer un superutilisateur
-echo "✓ Création d'un superutilisateur..."
-docker-compose exec -T backend python manage.py createsuperuser --noinput \
-  --username admin --email admin@example.com || true
+# Premier compte : le mot de passe est engendré et affiché une seule fois.
+# La commande échoue sans conséquence si le compte existe déjà.
+echo "✓ Création du compte de direction..."
+docker compose exec -T backend python manage.py create_manager admin || true
 
 echo ""
 echo "======================================"
@@ -60,12 +77,12 @@ echo "✅ Déploiement réussi!"
 echo "======================================"
 echo ""
 echo "Services:"
-echo "  Frontend: http://localhost"
-echo "  Backend API: http://localhost/api/"
+echo "  Application: http://localhost"
+echo "  API: http://localhost/api/"
 echo "  Admin: http://localhost/admin/"
 echo ""
 echo "Logs:"
-echo "  docker-compose logs -f"
+echo "  docker compose logs -f"
 echo ""
 echo "Arrêter:"
-echo "  docker-compose down"
+echo "  docker compose down"

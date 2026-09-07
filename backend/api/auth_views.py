@@ -24,6 +24,7 @@ class RegisterView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = 'register'
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -33,10 +34,15 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-    """POST /api/auth/login/ — retourne le token d'authentification."""
+    """POST /api/auth/login/ — retourne le token d'authentification.
+
+    La vue est limitée par adresse : une porte d'entrée ouverte sans compteur
+    laisse deviner un mot de passe par force brute.
+    """
 
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = 'login'
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
@@ -76,6 +82,8 @@ class ChangePasswordView(APIView):
     """POST /api/auth/change-password/ — remplace le mot de passe et le token."""
 
     permission_classes = [IsAuthenticated]
+    # Le mot de passe actuel y est vérifié : la vue se devine comme la connexion.
+    throttle_scope = 'login'
 
     def post(self, request):
         serializer = ChangePasswordSerializer(

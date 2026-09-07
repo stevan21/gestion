@@ -1,0 +1,15 @@
+[Unit]
+Description=Flux Gestion - Celery Worker
+After=network.target redis-server.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/fluxgestion/backend
+EnvironmentFile=/etc/fluxgestion.env
+ExecStart=/opt/fluxgestion/.venv/bin/celery -A fluxgestion worker -l info
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
