@@ -71,6 +71,10 @@ set -a; . /etc/fluxgestion.env; set +a
 
 Le mot de passe est engendré et affiché **une seule fois**.
 
+Chargez l'environnement comme ci-dessus, ne passez pas par `sudo -u www-data` :
+sudo vide l'environnement, Django retombe alors sur SQLite et crée une base
+vide à côté de la vraie, sans rien signaler d'autre qu'une table manquante.
+
 ## Mettre à jour
 
 ```bash
