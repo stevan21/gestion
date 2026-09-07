@@ -1,0 +1,14 @@
+# Cœur applicatif
+Django>=5.2,<6.0
+djangorestframework>=3.16
+django-cors-headers>=4.9
+django-filter>=25.1
+python-decouple>=3.8
+
+# Tâches asynchrones (optionnel : sans broker, les tâches tournent en local)
+celery>=5.5
+redis>=5.0
+
+# Production
+gunicorn>=23.0
+psycopg2-binary>=2.9.10

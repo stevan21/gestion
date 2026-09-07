@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux Gestion — Suivi de performance d'équipe</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+    <!-- ============ RAIL DE NAVIGATION ============ -->
+    <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-brand">
+            <span class="brand-mark"><i class="fas fa-chart-line"></i></span>
+            <span class="brand-text">
+                <strong>Flux Gestion</strong>
+                <small>Suivi de performance</small>
+            </span>
+        </div>
+
+        <!-- Menu et resume defilent ensemble : deux barres separees dans un
+             rail de 264 px se marcheraient dessus. -->
+        <div class="sidebar-body">
+            <nav class="sidebar-nav">
+                <p class="nav-section">Pilotage</p>
+                <a href="#" class="nav-link active" data-page="dashboard" data-section="Pilotage">
+                    <i class="fas fa-house nav-icon"></i>
+                    <span class="nav-label">Tableau de bord</span>
+                </a>
+                <a href="#" class="nav-link" data-page="objectives" data-section="Pilotage">
+                    <i class="fas fa-bullseye nav-icon"></i>
+                    <span class="nav-label">Objectifs</span>
+                </a>
+                <a href="#" class="nav-link" data-page="roadmap" data-section="Pilotage">
+                    <i class="fas fa-route nav-icon"></i>
+                    <span class="nav-label">Feuille de route</span>
+                </a>
+
+                <p class="nav-section">Exécution</p>
+                <a href="#" class="nav-link" data-page="tasks" data-section="Exécution">
+                    <i class="fas fa-list-check nav-icon"></i>
+                    <span class="nav-label">Tâches du jour</span>
+                    <span class="alert-badge" id="taskBadge" hidden>0</span>
+                </a>
+                <a href="#" class="nav-link" data-page="reports" data-section="Exécution">
+                    <i class="fas fa-file-lines nav-icon"></i>
+                    <span class="nav-label">Rapports</span>
+                </a>
+                <a href="#" class="nav-link" data-page="leaves" data-section="Exécution">
+                    <i class="fas fa-umbrella-beach nav-icon"></i>
+                    <span class="nav-label">Congés</span>
+                    <span class="alert-badge" id="leaveBadge" hidden>0</span>
+                </a>
+
+                <p class="nav-section founder-only" hidden>Direction</p>
+                <a href="#" class="nav-link founder-only" data-page="panel"
+                   data-section="Direction" hidden>
+                    <i class="fas fa-tower-broadcast nav-icon"></i>
+                    <span class="nav-label">Panel</span>
+                    <span class="live-dot" id="panelDot" hidden></span>
+                </a>
+                <a href="#" class="nav-link founder-only" data-page="team" data-section="Direction" hidden>
+                    <i class="fas fa-users nav-icon"></i>
+                    <span class="nav-label">Équipe</span>
+                </a>
+                <a href="#" class="nav-link founder-only" data-page="attendance"
+                   data-section="Direction" hidden>
+                    <i class="fas fa-fingerprint nav-icon"></i>
+                    <span class="nav-label">Présences</span>
+                </a>
+                <a href="#" class="nav-link founder-only" data-page="accounts"
+                   data-section="Direction" hidden>
+                    <i class="fas fa-user-gear nav-icon"></i>
+                    <span class="nav-label">Utilisateurs</span>
+                </a>
+
+                <p class="nav-section manager-only" hidden>Personnel</p>
+                <a href="#" class="nav-link manager-only" data-page="payroll"
+                   data-section="Personnel" hidden>
+                    <i class="fas fa-money-check-dollar nav-icon"></i>
+                    <span class="nav-label">Bulletins de paie</span>
+                </a>
+                <a href="#" class="nav-link manager-only" data-page="staff"
+                   data-section="Personnel" hidden>
+                    <i class="fas fa-user-clock nav-icon"></i>
+                    <span class="nav-label">Suivi du personnel</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-panel">
+                <div class="sidebar-section">
+                    <h4>Objectif du mois</h4>
+                    <div id="sidebarObjective" class="sidebar-objective">
+                        <p class="text-muted">Chargement…</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h4>Aujourd'hui</h4>
+                    <div id="sidebarToday" class="sidebar-objective">
+                        <p class="text-muted">Chargement…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+    <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+    <div class="app-main">
+
+        <header class="topbar">
+            <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <nav class="breadcrumb">
+                <span id="topbarSection">Pilotage</span>
+                <i class="fas fa-chevron-right"></i>
+                <strong id="topbarTitle">Tableau de bord</strong>
+            </nav>
+
+            <div class="topbar-actions">
+                <span class="topbar-date" id="topbarDate"></span>
+
+                <!-- Pointage : l'état du bouton dit où en est la journée —
+                     arrivée à pointer, journée en cours, ou journée close. -->
+                <button type="button" class="btn-punch" id="punchBtn" hidden>
+                    <i class="fas fa-fingerprint"></i>
+                    <span id="punchLabel">Pointer l'arrivée</span>
+                </button>
+
+                <button class="btn-icon" id="suggestionBtn"
+                        title="Boîte à suggestions">
+                    <i class="fas fa-lightbulb"></i>
+                </button>
+
+                <!-- Cloche : le compteur reflète des situations vérifiées à
+                     l'instant, il se vide quand elles sont réglées. -->
+                <div class="notif-menu" id="notifMenu">
+                    <button class="btn-icon" id="notifBtn" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notif-badge" id="notifBadge" hidden>0</span>
+                    </button>
+                    <div class="dropdown-panel" id="notifPanel" hidden>
+                        <div class="dropdown-head">
+                            <strong>Notifications</strong>
+                            <button class="btn-icon btn-icon-sm" id="notifRefresh"
+                                    title="Actualiser">
+                                <i class="fas fa-rotate-right"></i>
+                            </button>
+                        </div>
+                        <div id="notifList" class="notif-list"></div>
+                    </div>
+                </div>
+
+                <button class="btn-icon" id="themeToggle" title="Thème">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="btn-icon" id="refreshBtn" title="Rafraîchir">
+                    <i class="fas fa-sync"></i>
+                </button>
+
+                <div class="user-menu">
+                    <button type="button" class="btn-user">
+                        <span class="user-avatar"><i class="fas fa-user"></i></span>
+                        <span class="user-identity">
+                            <span class="identity-name" id="sidebarName">Utilisateur</span>
+                            <span class="identity-role" id="sidebarRole">—</span>
+                        </span>
+                        <i class="fas fa-chevron-down user-caret"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="#" id="profileBtn">
+                            <i class="fas fa-id-badge"></i> Mon profil
+                        </a>
+                        <a href="#" id="logoutBtn">
+                            <i class="fas fa-right-from-bracket"></i> Déconnexion
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+
+            <!-- ============ TABLEAU DE BORD ============ -->
+            <section id="dashboard" class="page active">
+                <div class="page-header">
+                    <div>
+                        <h1>Tableau de bord</h1>
+                        <p class="text-muted" id="dashboardSubtitle">Votre mois en cours</p>
+                    </div>
+                </div>
+
+                <div id="objectiveBanner"></div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statRevenue">—</h3>
+                            <p class="stat-label">CA réalisé / attendu</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statClients">—</h3>
+                            <p class="stat-label">Clients signés / attendus</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statTasks">—</h3>
+                            <p class="stat-label">Tâches faites aujourd'hui</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-accent">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statRoadmap">—</h3>
+                            <p class="stat-label">Jalons terminés</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Chiffre d'affaires par mois</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Activité des tâches</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card mt-lg">
+                    <h3>Mes tâches du jour</h3>
+                    <div id="dashboardTasks" class="task-list"></div>
+                </div>
+            </section>
+
+            <!-- ============ OBJECTIFS ============ -->
+            <section id="objectives" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Objectifs mensuels</h1>
+                        <p class="text-muted">CA et clients attendus, mois par mois</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="exportObjectivesBtn">
+                            <i class="fas fa-file-csv"></i> Exporter
+                        </button>
+                        <button class="btn btn-primary" id="addObjectiveBtn">
+                            <i class="fas fa-plus"></i> Définir un mois
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <select id="objectiveStatusFilter" class="input-field">
+                            <option value="">Tous les statuts</option>
+                            <option value="draft">Brouillon</option>
+                            <option value="active">En cours</option>
+                            <option value="closed">Clôturé</option>
+                        </select>
+                        <select id="objectiveDepartmentFilter" class="input-field founder-only" hidden>
+                            <option value="">Tous les pôles</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="objectivesList" class="objective-list"></div>
+            </section>
+
+            <!-- ============ FEUILLE DE ROUTE ============ -->
+            <section id="roadmap" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Feuille de route</h1>
+                        <p class="text-muted">Les jalons qui mènent à l'objectif du mois</p>
+                    </div>
+                    <button class="btn btn-primary" id="addRoadmapBtn">
+                        <i class="fas fa-plus"></i> Ajouter un jalon
+                    </button>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <input type="text" id="roadmapSearch" class="input-field"
+                               placeholder="Rechercher un jalon…">
+                        <select id="roadmapStatusFilter" class="input-field">
+                            <option value="">Tous les statuts</option>
+                            <option value="todo">À faire</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="done">Terminé</option>
+                            <option value="blocked">Bloqué</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="roadmapList" class="roadmap-list"></div>
+            </section>
+
+            <!-- ============ TÂCHES DU JOUR ============ -->
+            <section id="tasks" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Tâches du jour</h1>
+                        <p class="text-muted" id="tasksSubtitle">Ce que vous vous êtes fixé aujourd'hui</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="carryOverBtn">
+                            <i class="fas fa-arrow-right-arrow-left"></i> Reporter les retards
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <form id="quickTaskForm" class="quick-task">
+                        <input type="text" id="quickTaskTitle" class="input-field"
+                               placeholder="Ajouter une tâche pour aujourd'hui…" required>
+                        <select id="quickTaskPriority" class="input-field">
+                            <option value="1">Basse</option>
+                            <option value="2" selected>Normale</option>
+                            <option value="3">Haute</option>
+                            <option value="4">Urgente</option>
+                        </select>
+                        <select id="quickTaskRoadmap" class="input-field">
+                            <option value="">Sans jalon</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </form>
+                </div>
+
+                <div id="lateTasksSection" class="card mt-lg" hidden>
+                    <h3><i class="fas fa-triangle-exclamation"></i> En retard</h3>
+                    <div id="lateTasksList" class="task-list"></div>
+                </div>
+
+                <div class="card mt-lg">
+                    <h3>Aujourd'hui</h3>
+                    <div id="todayTasksList" class="task-list"></div>
+                </div>
+            </section>
+
+            <!-- ============ RAPPORTS ============ -->
+            <section id="reports" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Rapports</h1>
+                        <p class="text-muted">Bilans de période, missions et réunions</p>
+                    </div>
+                    <button class="btn btn-primary" id="addReportBtn">
+                        <i class="fas fa-plus"></i> Rédiger un rapport
+                    </button>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <select id="reportPeriodFilter" class="input-field">
+                            <option value="">Tous les types</option>
+                            <option value="daily">Journalier</option>
+                            <option value="weekly">Hebdomadaire</option>
+                            <option value="monthly">Mensuel</option>
+                            <option value="mission">Rapport de mission</option>
+                            <option value="meeting">Rapport de réunion</option>
+                        </select>
+                        <select id="reportStatusFilter" class="input-field">
+                            <option value="">Tous les états</option>
+                            <option value="draft">Brouillon</option>
+                            <option value="submitted">Soumis</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="reportsList" class="report-list"></div>
+            </section>
+
+            <!-- ============ ÉQUIPE (fondateurs) ============ -->
+            <section id="team" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Équipe</h1>
+                        <p class="text-muted" id="teamSubtitle">Synthèse du mois</p>
+                    </div>
+                    <input type="month" id="teamMonth" class="input-field team-month">
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="teamRevenue">—</h3>
+                            <p class="stat-label">CA d'équipe</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="teamClients">—</h3>
+                            <p class="stat-label">Clients signés</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="teamCoverage">—</h3>
+                            <p class="stat-label">Objectifs définis</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-danger">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="teamAtRisk">—</h3>
+                            <p class="stat-label">Membres en retard</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-lg">
+                    <h3>Avancement par membre</h3>
+                    <div class="table-scroll">
+                        <table class="data-table" id="teamTable">
+                            <thead>
+                                <tr>
+                                    <th>Membre</th>
+                                    <th>Pôle</th>
+                                    <th>CA réalisé / attendu</th>
+                                    <th>Clients</th>
+                                    <th>Avancement</th>
+                                    <th>Tâches ouvertes</th>
+                                    <th>Rapports</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teamTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ PANEL (fondateurs) ============ -->
+            <section id="panel" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Panel</h1>
+                        <p class="text-muted" id="panelSubtitle">
+                            Activité de l'équipe en direct
+                        </p>
+                    </div>
+                    <div class="page-actions">
+                        <label class="checkbox-field" title="Relit le panel toutes les 30 secondes">
+                            <input type="checkbox" id="panelAuto" checked>
+                            <span>Suivi en direct</span>
+                        </label>
+                        <button class="btn btn-secondary" id="panelRefresh">
+                            <i class="fas fa-rotate-right"></i> Actualiser
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-person-running"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="panelWorking">—</h3>
+                            <p class="stat-label">En activité maintenant</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-stopwatch"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="panelLogged">—</h3>
+                            <p class="stat-label">Temps pointé aujourd'hui</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="panelTasks">—</h3>
+                            <p class="stat-label">Tâches faites aujourd'hui</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-accent">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="panelIdle">—</h3>
+                            <p class="stat-label">Sans tâche entamée</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h3>Qui fait quoi, à l'instant</h3>
+                        <span class="text-muted" id="panelStamp"></span>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="data-table" id="panelTable">
+                            <thead>
+                                <tr>
+                                    <th>Membre</th>
+                                    <th>État</th>
+                                    <th>Tâche en cours</th>
+                                    <th>Temps du jour</th>
+                                    <th>Tâches</th>
+                                    <th>Retards</th>
+                                    <th>Points</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="panelTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card mt-lg">
+                    <h3>Derniers rapports reçus</h3>
+                    <div id="panelReports" class="panel-reports"></div>
+                </div>
+            </section>
+
+            <!-- ============ UTILISATEURS (fondateurs) ============ -->
+            <section id="accounts" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Utilisateurs</h1>
+                        <p class="text-muted" id="accountsSubtitle">
+                            Comptes, profils et rôles
+                        </p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="addAccountBtn">
+                            <i class="fas fa-user-plus"></i> Nouvel utilisateur
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <input type="text" id="accountSearch" class="input-field"
+                               placeholder="Rechercher un nom, un identifiant…">
+                        <select id="accountRoleFilter" class="input-field">
+                            <option value="">Tous les profils</option>
+                            <option value="member">Employé</option>
+                            <option value="manager">Gérant</option>
+                            <option value="founder">Fondateur</option>
+                        </select>
+                        <select id="accountDepartmentFilter" class="input-field">
+                            <option value="">Tous les pôles</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-scroll">
+                        <table class="data-table" id="accountsTable">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Profil</th>
+                                    <th>Pôle</th>
+                                    <th>Poste</th>
+                                    <th>État</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ CONGÉS ============ -->
+            <section id="leaves" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Congés</h1>
+                        <p class="text-muted" id="leavesSubtitle">
+                            Demandes de congé et d'absence
+                        </p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="addLeaveBtn">
+                            <i class="fas fa-plus"></i> Demander un congé
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-umbrella-beach"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="leaveBalance">—</h3>
+                            <p class="stat-label">Mon solde de congés</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="leaveTaken">—</h3>
+                            <p class="stat-label">Jours pris cette année</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-accent">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="leavePending">—</h3>
+                            <p class="stat-label">Demandes en attente</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-plane-departure"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="leaveAway">—</h3>
+                            <p class="stat-label">En congé aujourd'hui</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <select id="leaveStatusFilter" class="input-field">
+                            <option value="">Tous les états</option>
+                            <option value="pending">En attente</option>
+                            <option value="approved">Accordées</option>
+                            <option value="refused">Refusées</option>
+                            <option value="cancelled">Annulées</option>
+                        </select>
+                        <select id="leaveKindFilter" class="input-field">
+                            <option value="">Toutes les natures</option>
+                            <option value="paid">Congé payé</option>
+                            <option value="unpaid">Congé sans solde</option>
+                            <option value="sick">Maladie</option>
+                            <option value="special">Absence exceptionnelle</option>
+                        </select>
+                        <select id="leaveMemberFilter" class="input-field founder-only"
+                                hidden>
+                            <option value="">Toute l'équipe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="leavesList" class="report-list"></div>
+            </section>
+
+            <!-- ============ PRÉSENCES (fondateurs) ============ -->
+            <section id="attendance" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Présences</h1>
+                        <p class="text-muted" id="attendanceSubtitle">
+                            Pointages du mois
+                        </p>
+                    </div>
+                    <div class="page-actions">
+                        <input type="month" id="attendanceMonth" class="input-field team-month">
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="attendanceHours">—</h3>
+                            <p class="stat-label">Heures pointées</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="attendanceDays">—</h3>
+                            <p class="stat-label">Journées pointées</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-accent">
+                            <i class="fas fa-person-running"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="attendanceLate">—</h3>
+                            <p class="stat-label">Retards cumulés</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-danger">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="attendanceAbsences">—</h3>
+                            <p class="stat-label">Absences sans motif</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h3>Le mois, membre par membre</h3>
+                        <span class="text-muted" id="attendanceWorkingDays">—</span>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Membre</th>
+                                    <th>Journées</th>
+                                    <th>Heures</th>
+                                    <th>Retards</th>
+                                    <th>Congés</th>
+                                    <th>Absences</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card mt-lg">
+                    <div class="card-head">
+                        <h3>La journée en cours</h3>
+                        <span class="text-muted" id="attendanceTodayCount">—</span>
+                    </div>
+                    <div id="attendanceToday" class="attendance-today"></div>
+                </div>
+            </section>
+
+            <!-- ============ BULLETINS DE PAIE (gérant) ============ -->
+            <section id="payroll" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Bulletins de paie</h1>
+                        <p class="text-muted" id="payrollSubtitle">Paie du mois</p>
+                    </div>
+                    <div class="page-actions">
+                        <input type="month" id="payrollMonth" class="input-field team-month">
+                        <button class="btn btn-primary" id="addPayslipBtn">
+                            <i class="fas fa-plus"></i> Nouveau bulletin
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-sack-dollar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="payrollGross">—</h3>
+                            <p class="stat-label">Masse salariale brute</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-hand-holding-dollar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="payrollNet">—</h3>
+                            <p class="stat-label">Net à payer</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="payrollWorked">—</h3>
+                            <p class="stat-label">Heures travaillées</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-accent">
+                            <i class="fas fa-business-time"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="payrollOvertime">—</h3>
+                            <p class="stat-label">Heures supplémentaires</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <select id="payslipMemberFilter" class="input-field">
+                            <option value="">Tout le personnel</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="payslipsList" class="report-list"></div>
+            </section>
+
+            <!-- ============ SUIVI DU PERSONNEL (gérant) ============ -->
+            <section id="staff" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1>Suivi du personnel</h1>
+                        <p class="text-muted" id="staffSubtitle">
+                            Mises à pied, observations, retards et heures supplémentaires
+                        </p>
+                    </div>
+                    <div class="page-actions">
+                        <input type="month" id="staffMonth" class="input-field team-month">
+                        <button class="btn btn-primary" id="addStaffEventBtn">
+                            <i class="fas fa-plus"></i> Enregistrer un évènement
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-danger">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="staffSuspensions">—</h3>
+                            <p class="stat-label">Mises à pied</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-accent">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="staffObservations">—</h3>
+                            <p class="stat-label">Observations</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-info">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="staffLateness">—</h3>
+                            <p class="stat-label">Retards cumulés</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-success">
+                            <i class="fas fa-business-time"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="staffOvertime">—</h3>
+                            <p class="stat-label">Heures supplémentaires</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card filters-card">
+                    <div class="filter-row">
+                        <select id="staffKindFilter" class="input-field">
+                            <option value="">Toutes les natures</option>
+                            <option value="suspension">Mise à pied</option>
+                            <option value="observation">Observation</option>
+                            <option value="lateness">Retard</option>
+                            <option value="overtime">Heures supplémentaires</option>
+                        </select>
+                        <select id="staffMemberFilter" class="input-field">
+                            <option value="">Tout le personnel</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="staffEventsList" class="report-list"></div>
+            </section>
+        </main>
+    </div>
+</div>
+
+    <!-- ============ MODALE OBJECTIF ============ -->
+    <div id="objectiveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Objectifs du mois</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="objectiveForm" class="form">
+                <input type="hidden" id="objectiveId">
+                <div class="form-group">
+                    <label for="objectiveMonth">Mois</label>
+                    <input type="month" id="objectiveMonth" class="input-field" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="objectiveRevenueTarget">CA attendu (FCFA)</label>
+                        <input type="number" id="objectiveRevenueTarget" class="input-field"
+                               step="1" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="objectiveRevenueAchieved">CA réalisé (FCFA)</label>
+                        <input type="number" id="objectiveRevenueAchieved" class="input-field"
+                               step="1" min="0" value="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="objectiveClientsTarget">Clients attendus</label>
+                        <input type="number" id="objectiveClientsTarget" class="input-field"
+                               min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="objectiveClientsAchieved">Clients signés</label>
+                        <input type="number" id="objectiveClientsAchieved" class="input-field"
+                               min="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="objectiveFocus">Objectif principal</label>
+                    <input type="text" id="objectiveFocus" class="input-field"
+                           placeholder="La priorité du mois en une phrase">
+                </div>
+                <div class="form-group">
+                    <label for="objectiveNotes">Commentaire</label>
+                    <textarea id="objectiveNotes" class="input-field" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE JALON ============ -->
+    <div id="roadmapModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Jalon</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="roadmapForm" class="form">
+                <input type="hidden" id="roadmapId">
+                <div class="form-group">
+                    <label for="roadmapObjective">Rattaché au mois</label>
+                    <select id="roadmapObjective" class="input-field" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="roadmapTitle">Intitulé</label>
+                    <input type="text" id="roadmapTitle" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="roadmapDescription">Description</label>
+                    <textarea id="roadmapDescription" class="input-field" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="roadmapDueDate">Échéance</label>
+                        <input type="date" id="roadmapDueDate" class="input-field">
+                    </div>
+                    <div class="form-group">
+                        <label for="roadmapStatus">Statut</label>
+                        <select id="roadmapStatus" class="input-field">
+                            <option value="todo">À faire</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="done">Terminé</option>
+                            <option value="blocked">Bloqué</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="roadmapProgress">Avancement : <span id="roadmapProgressValue">0</span> %</label>
+                    <input type="range" id="roadmapProgress" min="0" max="100" value="0" step="5">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE RAPPORT ============ -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Rapport</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="reportForm" class="form">
+                <input type="hidden" id="reportId">
+
+                <div class="form-group">
+                    <label for="reportPeriodType">Type de rapport</label>
+                    <select id="reportPeriodType" class="input-field">
+                        <optgroup label="Bilan de période">
+                            <option value="daily">Journalier</option>
+                            <option value="weekly" selected>Hebdomadaire</option>
+                            <option value="monthly">Mensuel</option>
+                        </optgroup>
+                        <optgroup label="Compte rendu">
+                            <option value="mission">Rapport de mission</option>
+                            <option value="meeting">Rapport de réunion</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- Champs propres a une mission ou a une reunion. -->
+                <div class="form-group event-field" hidden>
+                    <label for="reportTitle">Objet</label>
+                    <input type="text" id="reportTitle" class="input-field" maxlength="200"
+                           placeholder="Mission de cadrage chez Aurore Industries">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group event-field" hidden>
+                        <label for="reportLocation">Lieu</label>
+                        <input type="text" id="reportLocation" class="input-field"
+                               maxlength="200" placeholder="Lyon, siège du client">
+                    </div>
+                    <div class="form-group">
+                        <label for="reportStart" id="reportStartLabel">Début</label>
+                        <input type="date" id="reportStart" class="input-field" required>
+                    </div>
+                    <div class="form-group" id="reportEndGroup">
+                        <label for="reportEnd" id="reportEndLabel">Fin</label>
+                        <input type="date" id="reportEnd" class="input-field" required>
+                    </div>
+                </div>
+
+                <div class="form-group event-field" hidden>
+                    <label for="reportParticipants">Participants</label>
+                    <textarea id="reportParticipants" class="input-field" rows="2"
+                              placeholder="Qui était présent ?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="reportSummary" id="reportSummaryLabel">Bilan</label>
+                    <textarea id="reportSummary" class="input-field" rows="4" required
+                              placeholder="Où en êtes-vous sur la période ?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reportAchievements" id="reportAchievementsLabel">Réalisations</label>
+                    <textarea id="reportAchievements" class="input-field" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reportBlockers" id="reportBlockersLabel">Difficultés</label>
+                    <textarea id="reportBlockers" class="input-field" rows="3"></textarea>
+                </div>
+                <div class="form-group event-field" hidden>
+                    <label for="reportDecisions">Décisions</label>
+                    <textarea id="reportDecisions" class="input-field" rows="3"
+                              placeholder="Ce qui a été arbitré, et par qui"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reportNextSteps" id="reportNextStepsLabel">Prochaines étapes</label>
+                    <textarea id="reportNextSteps" class="input-field" rows="3"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE BULLETIN DE PAIE ============ -->
+    <div id="payslipModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bulletin de paie</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="payslipForm" class="form">
+                <input type="hidden" id="payslipId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="payslipMember">Membre du personnel</label>
+                        <select id="payslipMember" class="input-field" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="payslipMonth">Mois</label>
+                        <input type="month" id="payslipMonth" class="input-field" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="payslipBase">Salaire de base (FCFA)</label>
+                        <input type="number" id="payslipBase" class="input-field"
+                               step="1" min="0" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="payslipWorkedHours">Heures travaillées</label>
+                        <input type="number" id="payslipWorkedHours" class="input-field"
+                               step="0.25" min="0" value="0">
+                        <p class="field-hint">Heures du mois, hors heures supplémentaires.</p>
+                        <!-- Le pointage propose son total ; le gérant reste
+                             maître du chiffre qu'il inscrit. -->
+                        <p class="field-hint" id="payslipHoursHint" hidden>
+                            <span id="payslipHoursText"></span>
+                            <button type="button" class="link-button"
+                                    id="payslipHoursApply">Reporter</button>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="payslipOvertimeHours">Heures supplémentaires</label>
+                        <input type="number" id="payslipOvertimeHours" class="input-field"
+                               step="0.25" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="payslipOvertimeAmount">Montant heures sup. (FCFA)</label>
+                        <input type="number" id="payslipOvertimeAmount" class="input-field"
+                               step="1" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="payslipBonuses">Primes (FCFA)</label>
+                        <input type="number" id="payslipBonuses" class="input-field"
+                               step="1" min="0" value="0">
+                        <!-- La prime des points ne s'applique pas d'elle-même :
+                             le gérant reste maître du montant qu'il inscrit. -->
+                        <p class="field-hint" id="payslipBonusHint" hidden>
+                            <span id="payslipBonusText"></span>
+                            <button type="button" class="link-button"
+                                    id="payslipBonusApply">Reporter</button>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="payslipDeductions">Retenues (FCFA)</label>
+                        <input type="number" id="payslipDeductions" class="input-field"
+                               step="1" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="payslipContributions">Cotisations (FCFA)</label>
+                        <input type="number" id="payslipContributions" class="input-field"
+                               step="1" min="0" value="0">
+                    </div>
+                </div>
+
+                <!-- Le net se recalcule a chaque frappe : une erreur de saisie
+                     se voit avant l'enregistrement. -->
+                <div class="payslip-preview">
+                    <div><span>Brut</span><strong id="payslipGrossPreview">—</strong></div>
+                    <div><span>Net à payer</span><strong id="payslipNetPreview">—</strong></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="payslipNotes">Observations</label>
+                    <textarea id="payslipNotes" class="input-field" rows="2"></textarea>
+                </div>
+
+                <!-- Retards, observations et mises a pied du mois : ils se
+                     lisent ici mais se saisissent dans le suivi du personnel,
+                     leur seule source. -->
+                <div class="form-group" id="payslipEventsBlock" hidden>
+                    <label>Retards, observations et mises à pied du mois</label>
+                    <div id="payslipEvents"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE DEMANDE DE CONGÉ ============ -->
+    <div id="leaveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Demande de congé</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="leaveForm" class="form">
+                <input type="hidden" id="leaveId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="leaveKind">Nature</label>
+                        <select id="leaveKind" class="input-field">
+                            <option value="paid">Congé payé</option>
+                            <option value="unpaid">Congé sans solde</option>
+                            <option value="sick">Maladie</option>
+                            <option value="special">Absence exceptionnelle</option>
+                        </select>
+                        <!-- Seul le congé payé entame le droit annuel : le
+                             solde restant se rappelle au moment de le poser. -->
+                        <p class="field-hint" id="leaveBalanceHint" hidden></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="leaveStart">Premier jour</label>
+                        <input type="date" id="leaveStart" class="input-field" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="leaveEnd">Dernier jour</label>
+                        <input type="date" id="leaveEnd" class="input-field" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-field">
+                        <input type="checkbox" id="leaveHalfDay">
+                        <span>Une demi-journée seulement</span>
+                    </label>
+                    <p class="field-hint" id="leaveDaysHint">—</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="leaveReason">Motif</label>
+                    <textarea id="leaveReason" class="input-field" rows="3" required
+                              placeholder="Ce que ce congé recouvre, et ce qui est prévu pendant l'absence."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Envoyer la demande</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE ÉVÈNEMENT DE PERSONNEL ============ -->
+    <div id="staffEventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Évènement de personnel</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="staffEventForm" class="form">
+                <input type="hidden" id="staffEventId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="staffEventMember">Membre du personnel</label>
+                        <select id="staffEventMember" class="input-field" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffEventKind">Nature</label>
+                        <select id="staffEventKind" class="input-field">
+                            <option value="suspension">Mise à pied</option>
+                            <option value="observation" selected>Observation</option>
+                            <option value="lateness">Retard</option>
+                            <option value="overtime">Heures supplémentaires</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="staffEventDate" id="staffEventDateLabel">Date</label>
+                        <input type="date" id="staffEventDate" class="input-field" required>
+                    </div>
+                    <div class="form-group" id="staffEventEndGroup" hidden>
+                        <label for="staffEventEnd">Fin de la mise à pied</label>
+                        <input type="date" id="staffEventEnd" class="input-field">
+                    </div>
+                    <div class="form-group" id="staffEventMinutesGroup" hidden>
+                        <label for="staffEventMinutes">Retard (minutes)</label>
+                        <input type="number" id="staffEventMinutes" class="input-field"
+                               min="1" step="1">
+                    </div>
+                    <div class="form-group" id="staffEventHoursGroup" hidden>
+                        <label for="staffEventHours">Heures effectuées</label>
+                        <input type="number" id="staffEventHours" class="input-field"
+                               min="0.25" step="0.25">
+                    </div>
+                </div>
+
+                <div class="form-group" id="staffEventPaidGroup" hidden>
+                    <label class="checkbox-field">
+                        <input type="checkbox" id="staffEventPaid">
+                        <span id="staffEventPaidLabel">Avec solde</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="staffEventReason">Motif</label>
+                    <textarea id="staffEventReason" class="input-field" rows="3" required
+                              placeholder="Les faits, datés et circonstanciés"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="staffEventDecision">Suite donnée</label>
+                    <textarea id="staffEventDecision" class="input-field" rows="2"
+                              placeholder="Décision prise, mesure appliquée"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE MOT DE PASSE ENGENDRÉ ============ -->
+    <!-- Le mot de passe ne transite qu'une fois : il doit pouvoir être lu,
+         sélectionné et copié. Un dialogue natif ne permet ni l'un ni l'autre,
+         et disparaît sans recours si le navigateur bloque les dialogues. -->
+    <div id="credentialModal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h2>Mot de passe engendré</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="form">
+                <p class="credential-for">
+                    <i class="fas fa-user"></i>
+                    <strong id="credentialName">—</strong>
+                    <span class="text-muted" id="credentialUsername"></span>
+                </p>
+
+                <div class="form-group">
+                    <label for="credentialValue">Mot de passe</label>
+                    <div class="credential-row">
+                        <input type="text" id="credentialValue" class="input-field"
+                               readonly>
+                        <button type="button" class="btn btn-secondary"
+                                id="credentialCopy">
+                            <i class="fas fa-copy"></i> Copier
+                        </button>
+                    </div>
+                </div>
+
+                <p class="credential-warning">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    Notez-le maintenant : il ne sera plus affiché. Demandez-lui
+                    de le changer à la première connexion.
+                </p>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary modal-close">
+                        J'ai noté
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODALE RÉACTION (direction) ============ -->
+    <div id="reactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Accorder des points</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="reactionForm" class="form">
+                <input type="hidden" id="reactionMember">
+
+                <p class="reaction-target">
+                    <i class="fas fa-user"></i>
+                    <strong id="reactionMemberName">—</strong>
+                </p>
+
+                <div class="form-group">
+                    <label>Nature de la réaction</label>
+                    <!-- Un barème visible : la valeur du geste se lit avant
+                         de cliquer. -->
+                    <div class="reaction-picker" id="reactionPicker"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reactionPoints">Points</label>
+                        <input type="number" id="reactionPoints" class="input-field"
+                               step="1" required>
+                        <p class="field-hint" id="reactionValueHint"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="reactionDate">Date</label>
+                        <input type="date" id="reactionDate" class="input-field" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reactionReason">Motif</label>
+                    <input type="text" id="reactionReason" class="input-field"
+                           maxlength="255" placeholder="Ce qui est salué, ou rappelé">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-star"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE MON PROFIL ============ -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Mon profil</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+
+            <div class="profile-body">
+                <div class="profile-identity">
+                    <span class="profile-avatar"><i class="fas fa-user"></i></span>
+                    <div>
+                        <h3 id="profileName">—</h3>
+                        <p class="text-muted" id="profileTitle">—</p>
+                    </div>
+                    <span class="status-badge" id="profileRole">—</span>
+                </div>
+
+                <dl class="profile-fields">
+                    <div>
+                        <dt>Identifiant</dt>
+                        <dd id="profileUsername">—</dd>
+                    </div>
+                    <div>
+                        <dt>Adresse électronique</dt>
+                        <dd id="profileEmail">—</dd>
+                    </div>
+                    <div>
+                        <dt>Pôle</dt>
+                        <dd id="profileDepartment">—</dd>
+                    </div>
+                    <div>
+                        <dt>Poste</dt>
+                        <dd id="profileJob">—</dd>
+                    </div>
+                    <div>
+                        <dt>Téléphone</dt>
+                        <dd id="profilePhone">—</dd>
+                    </div>
+                    <div>
+                        <dt>Dans l'équipe depuis</dt>
+                        <dd id="profileJoined">—</dd>
+                    </div>
+                </dl>
+
+                <section class="profile-section">
+                    <h4>Ma rémunération</h4>
+                    <!-- Le salaire de base vient du profil : il s'affiche sans
+                         attendre qu'un bulletin ait été établi. -->
+                    <div class="pay-summary">
+                        <div>
+                            <span>Salaire de base</span>
+                            <strong id="profileSalary">—</strong>
+                        </div>
+                        <div>
+                            <span>Points du mois</span>
+                            <strong id="profilePoints">—</strong>
+                        </div>
+                        <div>
+                            <span>Prime acquise</span>
+                            <strong id="profileBonus" class="bonus">—</strong>
+                        </div>
+                    </div>
+
+                    <div id="profilePayslips" class="profile-payslips"></div>
+                </section>
+
+                <section class="profile-section">
+                    <h4>Mes congés et ma présence</h4>
+                    <div class="pay-summary">
+                        <div>
+                            <span>Solde de congés</span>
+                            <strong id="profileLeaveBalance">—</strong>
+                        </div>
+                        <div>
+                            <span>Jours pris cette année</span>
+                            <strong id="profileLeaveTaken">—</strong>
+                        </div>
+                        <div>
+                            <span>Présence ce mois</span>
+                            <strong id="profileAttendance">—</strong>
+                        </div>
+                        <div>
+                            <span>Retards du mois</span>
+                            <strong id="profileLate">—</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="profile-section">
+                    <h4>Mes réactions</h4>
+                    <div id="profileReactions" class="reaction-list"></div>
+                </section>
+
+                <section class="profile-section">
+                    <h4>Changer mon mot de passe</h4>
+                    <form id="passwordForm" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="passwordCurrent">Mot de passe actuel</label>
+                                <input type="password" id="passwordCurrent"
+                                       class="input-field" autocomplete="current-password"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="passwordNew">Nouveau mot de passe</label>
+                                <input type="password" id="passwordNew"
+                                       class="input-field" autocomplete="new-password"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="passwordConfirm">Confirmation</label>
+                                <input type="password" id="passwordConfirm"
+                                       class="input-field" autocomplete="new-password"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Changer le mot de passe
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODALE UTILISATEUR ============ -->
+    <div id="accountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Utilisateur</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="accountForm" class="form">
+                <input type="hidden" id="accountId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="accountFirstName">Prénom</label>
+                        <input type="text" id="accountFirstName" class="input-field"
+                               maxlength="150">
+                    </div>
+                    <div class="form-group">
+                        <label for="accountLastName">Nom</label>
+                        <input type="text" id="accountLastName" class="input-field"
+                               maxlength="150">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="accountUsername">Identifiant de connexion</label>
+                        <input type="text" id="accountUsername" class="input-field"
+                               maxlength="150" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountEmail">Adresse électronique</label>
+                        <input type="email" id="accountEmail" class="input-field">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountRole">Profil</label>
+                    <select id="accountRole" class="input-field">
+                        <optgroup label="Profil employé">
+                            <option value="member" selected>Employé</option>
+                        </optgroup>
+                        <optgroup label="Profils administratifs">
+                            <option value="manager">Gérant</option>
+                            <option value="founder">Fondateur</option>
+                        </optgroup>
+                    </select>
+                    <!-- Le rôle décide de tout ce que la personne verra :
+                         il mérite d'être expliqué au moment du choix. -->
+                    <p class="field-hint" id="accountRoleHint"></p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="accountDepartment">Pôle</label>
+                        <select id="accountDepartment" class="input-field"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountJobTitle">Poste</label>
+                        <input type="text" id="accountJobTitle" class="input-field"
+                               maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="accountPhone">Téléphone</label>
+                        <input type="text" id="accountPhone" class="input-field"
+                               maxlength="30">
+                    </div>
+                    <div class="form-group">
+                        <label for="accountSalary">Salaire de base (FCFA)</label>
+                        <input type="number" id="accountSalary" class="input-field"
+                               step="1" min="0" value="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountPassword" id="accountPasswordLabel">
+                        Mot de passe
+                    </label>
+                    <input type="text" id="accountPassword" class="input-field"
+                           autocomplete="new-password">
+                    <p class="field-hint" id="accountPasswordHint">
+                        Laissez vide : un mot de passe est engendré et affiché une fois.
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODALE BOÎTE À SUGGESTIONS ============ -->
+    <div id="suggestionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Boîte à suggestions</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+
+            <form id="suggestionForm" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="suggestionCategory">Nature</label>
+                        <select id="suggestionCategory" class="input-field">
+                            <option value="idea" selected>Idée</option>
+                            <option value="problem">Problème</option>
+                            <option value="question">Question</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="suggestionMessage">Votre message</label>
+                    <textarea id="suggestionMessage" class="input-field" rows="4" required
+                              placeholder="Ce qui vous ferait gagner du temps, ce qui coince…"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Fermer</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Envoyer
+                    </button>
+                </div>
+            </form>
+
+            <!-- Réservé à la direction : la boîte lui est adressée. -->
+            <div class="suggestion-inbox founder-only" id="suggestionInbox" hidden>
+                <h3>Suggestions reçues</h3>
+                <div id="suggestionList" class="suggestion-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document mis en page pour l'impression et l'export PDF. -->
+    <div id="reportPrint" class="report-print"></div>
+
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

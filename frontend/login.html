@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Flux Gestion</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-base);
+            /* Le bleu tient les deux tiers, l'orange n'arrive qu'au coin :
+               passer directement de l'un a l'autre virait au mauve. */
+            background: linear-gradient(135deg, var(--primary-dark) 0%,
+                        var(--primary) 55%, var(--accent) 100%);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 26rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: var(--spacing-lg);
+        }
+
+        .auth-brand {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .auth-brand i {
+            font-size: var(--font-size-3xl);
+            color: var(--primary);
+        }
+
+        .auth-brand h1 {
+            margin: var(--spacing-sm) 0 var(--spacing-xs);
+            font-size: var(--font-size-2xl);
+            color: var(--gray-900);
+        }
+
+        .auth-brand p {
+            color: var(--gray-500);
+            font-size: var(--font-size-sm);
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: var(--spacing-xs);
+            background: var(--gray-200);
+            border-radius: var(--radius-base);
+            padding: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: var(--spacing-sm);
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--gray-600);
+            font-family: var(--font-family);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .auth-tab.active {
+            background: var(--gray-50);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .auth-form .form-group {
+            margin-bottom: var(--spacing-base);
+        }
+
+        .auth-form label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .auth-form .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .auth-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+
+        .auth-error {
+            display: none;
+            margin-bottom: var(--spacing-base);
+            padding: var(--spacing-sm) var(--spacing-base);
+            border-left: 3px solid var(--danger);
+            border-radius: var(--radius-sm);
+            background: rgba(245, 87, 108, 0.1);
+            color: var(--danger);
+            font-size: var(--font-size-sm);
+            white-space: pre-line;
+        }
+
+        .auth-error.visible { display: block; }
+
+        .auth-hint {
+            margin-top: var(--spacing-base);
+            text-align: center;
+            font-size: var(--font-size-xs);
+            color: var(--gray-500);
+        }
+
+        @media (max-width: 480px) {
+            .auth-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="auth-page">
+
+    <main class="auth-card">
+        <div class="auth-brand">
+            <i class="fas fa-chart-line"></i>
+            <h1>Flux Gestion</h1>
+            <p>Suivi de performance d'équipe</p>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+            <button type="button" class="auth-tab active" data-tab="login" role="tab">
+                Connexion
+            </button>
+            <button type="button" class="auth-tab" data-tab="register" role="tab">
+                Créer un compte
+            </button>
+        </div>
+
+        <div id="authError" class="auth-error" role="alert"></div>
+
+        <!-- Connexion -->
+        <form id="loginForm" class="auth-form" novalidate>
+            <div class="form-group">
+                <label for="loginUsername">Nom d'utilisateur</label>
+                <input type="text" id="loginUsername" class="input-field"
+                       autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Mot de passe</label>
+                <input type="password" id="loginPassword" class="input-field"
+                       autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-right-to-bracket"></i> Se connecter
+            </button>
+        </form>
+
+        <!-- Inscription -->
+        <form id="registerForm" class="auth-form" hidden novalidate>
+            <div class="form-group">
+                <label for="registerUsername">Nom d'utilisateur</label>
+                <input type="text" id="registerUsername" class="input-field"
+                       autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="registerEmail">Email</label>
+                <input type="email" id="registerEmail" class="input-field"
+                       autocomplete="email" required>
+            </div>
+            <div class="auth-row">
+                <div class="form-group">
+                    <label for="registerFirstName">Prénom</label>
+                    <input type="text" id="registerFirstName" class="input-field"
+                           autocomplete="given-name">
+                </div>
+                <div class="form-group">
+                    <label for="registerLastName">Nom</label>
+                    <input type="text" id="registerLastName" class="input-field"
+                           autocomplete="family-name">
+                </div>
+            </div>
+            <div class="auth-row">
+                <div class="form-group">
+                    <label for="registerJobTitle">Poste</label>
+                    <input type="text" id="registerJobTitle" class="input-field"
+                           placeholder="Business Developer">
+                </div>
+                <div class="form-group">
+                    <label for="registerDepartment">Pôle</label>
+                    <select id="registerDepartment" class="input-field">
+                        <option value="commercial">Commercial</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="produit">Produit</option>
+                        <option value="technique">Technique</option>
+                        <option value="finance">Finance</option>
+                        <option value="operations">Opérations</option>
+                        <option value="direction">Direction</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Mot de passe</label>
+                <input type="password" id="registerPassword" class="input-field"
+                       autocomplete="new-password" required>
+            </div>
+            <div class="form-group">
+                <label for="registerPasswordConfirm">Confirmer le mot de passe</label>
+                <input type="password" id="registerPasswordConfirm" class="input-field"
+                       autocomplete="new-password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Créer mon compte
+            </button>
+        </form>
+
+        <p class="auth-hint">
+            Le premier compte créé devient fondateur et voit toute l'équipe.
+            Les suivants ne voient que leurs propres données.
+        </p>
+    </main>
+
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

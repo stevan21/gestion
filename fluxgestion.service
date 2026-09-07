@@ -1,0 +1,21 @@
+[Unit]
+Description=Flux Gestion Django Application
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/fluxgestion/backend
+Environment="PATH=/path/to/fluxgestion/backend/venv/bin"
+ExecStart=/path/to/fluxgestion/backend/venv/bin/gunicorn \
+          --workers 4 \
+          --bind 127.0.0.1:8000 \
+          --access-logfile /var/log/fluxgestion/access.log \
+          --error-logfile /var/log/fluxgestion/error.log \
+          fluxgestion.wsgi:application
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
