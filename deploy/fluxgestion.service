@@ -9,6 +9,9 @@ Group=www-data
 WorkingDirectory=/opt/fluxgestion/backend
 EnvironmentFile=/etc/fluxgestion.env
 RuntimeDirectory=fluxgestion
+# gunicorn ouvre une socket de contrôle sous $HOME ; celui de www-data ne lui
+# est pas ouvert en écriture, et l'erreur revenait à chaque démarrage.
+Environment=HOME=/run/fluxgestion
 # La socket est lue par nginx, qui tourne aussi sous www-data : l'umask lui
 # laisse le droit de groupe, sans ouvrir la socket à tout le système.
 ExecStart=/opt/fluxgestion/.venv/bin/gunicorn \
