@@ -57,6 +57,28 @@ sudo certbot --nginx -d fluxgestion.76.13.146.34.sslip.io
 `nginx -t` avant tout rechargement : sur un serveur partagé, une erreur de
 syntaxe empêcherait nginx de redémarrer et emporterait les autres sites.
 
+## Le nom de domaine
+
+Faute de domaine propre, `<sous-domaine>.<IP>.sslip.io` et son équivalent
+`nip.io` renvoient l'IP qu'ils portent dans leur nom : aucune zone DNS à
+tenir, et Let's Encrypt y délivre un certificat.
+
+**Tous les résolveurs ne les acceptent pas.** Certains FAI ne répondent pas
+aux requêtes visant ces domaines génériques — la page devient injoignable
+depuis ce réseau-là, alors que le serveur répond normalement partout ailleurs.
+Pour distinguer les deux cas :
+
+```bash
+# Résout ailleurs mais pas ici : c'est le résolveur local, pas le serveur.
+nslookup <hôte> 8.8.8.8
+
+# Contourne le DNS et interroge le serveur directement.
+curl -I --resolve '<hôte>:443:<IP>' https://<hôte>/login.html
+```
+
+Un sous-domaine d'un domaine que l'on possède déjà évite la question : un
+enregistrement A vers l'IP, puis `certbot --nginx -d <sous-domaine>`.
+
 ## Le premier compte
 
 Le premier compte créé sur une instance devient fondateur. Pour un gérant,
